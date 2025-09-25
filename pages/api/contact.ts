@@ -1,7 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
-import pool from "@/lib/db";
-
 type ContactData = {
   firstName: string;
   lastName: string;
@@ -70,52 +68,47 @@ export default async function handler(
       email: email.trim().toLowerCase(),
     };
 
-    const client = await pool.connect();
+    // Call the Supabase API endpoint
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://api.dinkhousepb.com';
+    const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-    try {
-      const checkQuery = `
-        SELECT id FROM contact.contact_notification
-        WHERE email = $1
-      `;
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/submit_newsletter_signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': ANON_KEY,
+      },
+      body: JSON.stringify({
+        p_email: contactData.email,
+        p_first_name: contactData.firstName,
+        p_last_name: contactData.lastName,
+      }),
+    });
 
-      const existing = await client.query(checkQuery, [contactData.email]);
+    const result = await response.json();
 
-      if (existing.rows.length > 0) {
+    if (!response.ok) {
+      throw new Error(result.message || 'Failed to submit');
+    }
+
+    if (result.success) {
+      if (result.already_subscribed) {
         return res.status(200).json({
           success: true,
-          message:
-            "You're already on our waitlist! We'll notify you when we open.",
+          message: "You're already on our waitlist! We'll notify you when we open.",
           data: contactData,
         });
       }
 
-      const insertQuery = `
-        INSERT INTO contact.contact_notification (
-          first_name,
-          last_name,
-          email
-        ) VALUES ($1, $2, $3)
-        RETURNING id, created_at
-      `;
-
-      const values = [
-        contactData.firstName,
-        contactData.lastName,
-        contactData.email,
-      ];
-
-      const result = await client.query(insertQuery, values);
-
-      console.log("Contact notification signup saved:", result.rows[0]);
+      console.log("Contact notification signup saved:", result.inquiry_id);
 
       return res.status(200).json({
         success: true,
-        message:
-          "Successfully joined the waitlist! We'll notify you when we open.",
+        message: "Successfully joined the waitlist! We'll notify you when we open.",
         data: contactData,
       });
-    } finally {
-      client.release();
+    } else {
+      throw new Error(result.message || 'Submission failed');
     }
   } catch (error) {
     console.error("Error processing contact submission:", error);
