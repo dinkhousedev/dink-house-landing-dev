@@ -1,0 +1,7 @@
+tunnel: 51411762-21ab-416b-a174-fe943fa9678c
+credentials-file: /home/timc/.cloudflared/51411762-21ab-416b-a174-fe943fa9678c.json
+
+ingress:
+  - hostname: dinkhousepb.com
+    service: http://192.168.1.167:3001
+  - service: http_status:404
