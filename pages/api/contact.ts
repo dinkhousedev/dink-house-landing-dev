@@ -69,33 +69,38 @@ export default async function handler(
     };
 
     // Call the Supabase API endpoint
-    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://api.dinkhousepb.com';
-    const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const SUPABASE_URL =
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "https://api.dinkhousepb.com";
+    const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/submit_newsletter_signup`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': ANON_KEY,
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/rpc/submit_newsletter_signup`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: ANON_KEY,
+        },
+        body: JSON.stringify({
+          p_email: contactData.email,
+          p_first_name: contactData.firstName,
+          p_last_name: contactData.lastName,
+        }),
       },
-      body: JSON.stringify({
-        p_email: contactData.email,
-        p_first_name: contactData.firstName,
-        p_last_name: contactData.lastName,
-      }),
-    });
+    );
 
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || 'Failed to submit');
+      throw new Error(result.message || "Failed to submit");
     }
 
     if (result.success) {
       if (result.already_subscribed) {
         return res.status(200).json({
           success: true,
-          message: "You're already on our waitlist! We'll notify you when we open.",
+          message:
+            "You're already on our waitlist! We'll notify you when we open.",
           data: contactData,
         });
       }
@@ -104,11 +109,12 @@ export default async function handler(
 
       return res.status(200).json({
         success: true,
-        message: "Successfully joined the waitlist! We'll notify you when we open.",
+        message:
+          "Successfully joined the waitlist! We'll notify you when we open.",
         data: contactData,
       });
     } else {
-      throw new Error(result.message || 'Submission failed');
+      throw new Error(result.message || "Submission failed");
     }
   } catch (error) {
     console.error("Error processing contact submission:", error);

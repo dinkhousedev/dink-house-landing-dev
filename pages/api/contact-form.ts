@@ -1,30 +1,86 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import nodemailer from 'nodemailer';
+import type { NextApiRequest, NextApiResponse } from "next";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://api.dinkhousepb.com';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+import sgMail from "@sendgrid/mail";
 
-// MailPit configuration
-const MAILPIT_HOST = process.env.MAILPIT_HOST || 'localhost';
-const MAILPIT_SMTP_PORT = process.env.MAILPIT_SMTP_PORT || '1025';
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@dinkhousepb.com';
-const CONTACT_EMAIL = process.env.CONTACT_EMAIL || 'contact@dinkhousepb.com';
+// Initialize SendGrid
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
 
-// Create nodemailer transporter for MailPit
-const createMailPitTransporter = () => {
-  return nodemailer.createTransport({
-    host: MAILPIT_HOST,
-    port: parseInt(MAILPIT_SMTP_PORT),
-    secure: false, // MailPit doesn't use TLS
-    ignoreTLS: true,
-    tls: {
-      rejectUnauthorized: false
-    },
-    connectionTimeout: 5000,
-    greetingTimeout: 5000,
-    socketTimeout: 5000
-  });
-};
+// Configuration
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://api.dinkhousepb.com";
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const FROM_EMAIL = process.env.EMAIL_FROM || "hello@dinkhousepb.com";
+const FROM_NAME = process.env.EMAIL_FROM_NAME || "The Dink House";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@dinkhousepb.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://dinkhousepb.com";
+const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY || "";
+
+// Rate limiting configuration
+const RATE_LIMIT_PER_MINUTE = parseInt(
+  process.env.RATE_LIMIT_PER_MINUTE || "5",
+);
+const RATE_LIMIT_PER_HOUR = parseInt(process.env.RATE_LIMIT_PER_HOUR || "50");
+
+// Simple in-memory rate limiting (consider using Redis in production)
+const rateLimitMap = new Map<string, { count: number; firstRequest: number }>();
+
+// Rate limiting helper
+function checkRateLimit(ip: string): { allowed: boolean; message?: string } {
+  const now = Date.now();
+  const minuteAgo = now - 60 * 1000;
+  const hourAgo = now - 60 * 60 * 1000;
+
+  // Clean old entries
+  for (const [key, value] of rateLimitMap.entries()) {
+    if (value.firstRequest < hourAgo) {
+      rateLimitMap.delete(key);
+    }
+  }
+
+  const record = rateLimitMap.get(ip);
+
+  if (!record) {
+    rateLimitMap.set(ip, { count: 1, firstRequest: now });
+
+    return { allowed: true };
+  }
+
+  // Check minute limit
+  if (
+    record.firstRequest > minuteAgo &&
+    record.count >= RATE_LIMIT_PER_MINUTE
+  ) {
+    return {
+      allowed: false,
+      message: "Too many requests. Please wait a minute.",
+    };
+  }
+
+  // Check hour limit
+  if (record.count >= RATE_LIMIT_PER_HOUR) {
+    return {
+      allowed: false,
+      message: "Too many requests. Please try again later.",
+    };
+  }
+
+  record.count++;
+
+  return { allowed: true };
+}
+
+// Get client IP address
+function getClientIp(req: NextApiRequest): string {
+  const forwarded = req.headers["x-forwarded-for"];
+
+  if (typeof forwarded === "string") {
+    return forwarded.split(",")[0].trim();
+  }
+
+  return req.socket.remoteAddress || "unknown";
+}
 
 // Format HTML email for admin
 const formatAdminEmail = (data: any) => {
@@ -62,30 +118,42 @@ const formatAdminEmail = (data: any) => {
             <div class="value"><a href="mailto:${data.email}">${data.email}</a></div>
           </div>
 
-          ${data.phone ? `
+          ${
+            data.phone
+              ? `
           <div class="field">
             <div class="label">Phone:</div>
             <div class="value">${data.phone}</div>
           </div>
-          ` : ''}
+          `
+              : ""
+          }
 
-          ${data.company ? `
+          ${
+            data.company
+              ? `
           <div class="field">
             <div class="label">Company:</div>
             <div class="value">${data.company}</div>
           </div>
-          ` : ''}
+          `
+              : ""
+          }
 
-          ${data.subject ? `
+          ${
+            data.subject
+              ? `
           <div class="field">
             <div class="label">Subject:</div>
             <div class="value">${data.subject}</div>
           </div>
-          ` : ''}
+          `
+              : ""
+          }
 
           <div class="field">
             <div class="label">Message:</div>
-            <div class="message">${data.message.replace(/\n/g, '<br>')}</div>
+            <div class="message">${data.message.replace(/\n/g, "<br>")}</div>
           </div>
 
           <div class="footer">
@@ -111,18 +179,27 @@ const formatUserEmail = (firstName: string) => {
         .header { background: linear-gradient(135deg, #CDFE00 0%, #9BCF00 100%); padding: 30px; text-align: center; border-radius: 8px; }
         .content { background: white; padding: 30px; margin-top: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .button { display: inline-block; background: #CDFE00; color: black; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; margin-top: 20px; }
+        .highlight { background: #f0fff4; padding: 15px; border-left: 4px solid #9BCF00; margin: 20px 0; }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="header">
-          <h1 style="color: white; margin: 0;">Thank You!</h1>
+          <h1 style="color: white; margin: 0;">Thank You for Contacting Us!</h1>
         </div>
         <div class="content">
           <p>Hi ${firstName},</p>
           <p>Thank you for reaching out to The Dink House! We've received your message and appreciate you taking the time to contact us.</p>
-          <p>Our team will review your message and get back to you as soon as possible, typically within 24-48 hours.</p>
-          <p>In the meantime, feel free to explore our website or follow us on social media for the latest updates!</p>
+
+          <div class="highlight">
+            <strong>We will reply to your inquiry within 24 hours.</strong>
+            <br>Our team is reviewing your message and will get back to you shortly with a personalized response.
+          </div>
+
+          <p>In the meantime, feel free to explore our website or follow us on social media for the latest updates about our pickleball facilities and programs!</p>
+
+          <p>If you have any urgent matters, please don't hesitate to reach out to us directly.</p>
+
           <p>Best regards,<br>The Dink House Team</p>
         </div>
       </div>
@@ -131,51 +208,128 @@ const formatUserEmail = (firstName: string) => {
   `;
 };
 
-// Send email via MailPit
-async function sendToMailPit(emailData: {
-  from: string;
+// Send email via SendGrid
+async function sendEmail(emailData: {
   to: string;
   subject: string;
   html: string;
+  text?: string;
   replyTo?: string;
 }) {
   try {
-    console.log(`Attempting to send email via MailPit to ${MAILPIT_HOST}:${MAILPIT_SMTP_PORT}`);
-    const transporter = createMailPitTransporter();
+    if (!process.env.SENDGRID_API_KEY) {
+      console.warn("SendGrid API key not configured, skipping email send");
 
-    // Verify connection
-    await transporter.verify();
-    console.log('MailPit connection verified');
+      return false;
+    }
 
-    const mailOptions = {
-      from: `"The Dink House" <${emailData.from}>`,
+    const msg: any = {
       to: emailData.to,
+      from: {
+        email: FROM_EMAIL,
+        name: FROM_NAME,
+      },
       subject: emailData.subject,
       html: emailData.html,
-      replyTo: emailData.replyTo
+      text: emailData.text || stripHtml(emailData.html),
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully to MailPit:', info.messageId);
+    if (emailData.replyTo) {
+      msg.replyTo = emailData.replyTo;
+    }
+
+    const [response] = await sgMail.send(msg);
+
+    console.log(
+      "Email sent successfully via SendGrid:",
+      response.headers["x-message-id"],
+    );
+
     return true;
   } catch (error: any) {
-    console.error('Error sending to MailPit:', {
+    console.error("SendGrid error:", {
       message: error.message,
       code: error.code,
-      host: MAILPIT_HOST,
-      port: MAILPIT_SMTP_PORT
+      response: error.response?.body,
     });
+
+    return false;
+  }
+}
+
+// Strip HTML tags for text version
+function stripHtml(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Verify reCAPTCHA token
+async function verifyRecaptcha(token: string): Promise<boolean> {
+  try {
+    if (!RECAPTCHA_SECRET_KEY) {
+      console.warn(
+        "reCAPTCHA secret key not configured, skipping verification",
+      );
+
+      return true; // Skip verification in development if not configured
+    }
+
+    const response = await fetch(
+      "https://www.google.com/recaptcha/api/siteverify",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: `secret=${RECAPTCHA_SECRET_KEY}&response=${token}`,
+      },
+    );
+
+    const data = await response.json();
+
+    if (!data.success) {
+      console.error("reCAPTCHA verification failed:", data["error-codes"]);
+
+      return false;
+    }
+
+    // Optional: Check score for v3 (v2 doesn't have score)
+    if (data.score !== undefined && data.score < 0.5) {
+      console.warn("reCAPTCHA score too low:", data.score);
+
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("reCAPTCHA verification error:", error);
+
     return false;
   }
 }
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   // Only allow POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  // Check rate limiting
+  const clientIp = getClientIp(req);
+  const rateLimitCheck = checkRateLimit(clientIp);
+
+  if (!rateLimitCheck.allowed) {
+    return res.status(429).json({
+      success: false,
+      message: rateLimitCheck.message,
+    });
   }
 
   try {
@@ -186,25 +340,49 @@ export default async function handler(
       message,
       phone,
       company,
-      subject
+      subject,
+      recaptchaToken,
     } = req.body;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !message) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields'
+        message: "Missing required fields",
       });
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     if (!emailRegex.test(email)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid email address'
+        message: "Invalid email address",
       });
     }
+
+    // Verify reCAPTCHA
+    if (RECAPTCHA_SECRET_KEY && recaptchaToken) {
+      const isValidRecaptcha = await verifyRecaptcha(recaptchaToken);
+
+      if (!isValidRecaptcha) {
+        return res.status(400).json({
+          success: false,
+          message: "reCAPTCHA verification failed. Please try again.",
+        });
+      }
+    } else if (RECAPTCHA_SECRET_KEY && !recaptchaToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Please complete the reCAPTCHA verification",
+      });
+    }
+
+    // Get logo URL from Supabase Cloud storage
+    const logoUrl =
+      process.env.LOGO_URL ||
+      "https://wchxzbuuwssrnaxshseu.supabase.co/storage/v1/object/public/dink-files/dinklogo.jpg";
 
     // Prepare the payload for Supabase
     const payload = {
@@ -215,82 +393,100 @@ export default async function handler(
       p_phone: phone || null,
       p_company: company || null,
       p_subject: subject || null,
-      p_source: 'landing_page'
+      p_source: "landing_page",
     };
 
-    // Send emails via MailPit
+    // Send emails via SendGrid
     let emailSent = false;
     let confirmationSent = false;
 
     try {
       // Send admin notification email
-      emailSent = await sendToMailPit({
-        from: FROM_EMAIL,
-        to: CONTACT_EMAIL,
-        subject: subject ? `Contact Form: ${subject}` : 'New Contact Form Submission - The Dink House',
-        html: formatAdminEmail({ firstName, lastName, email, message, phone, company, subject }),
-        replyTo: email
+      emailSent = await sendEmail({
+        to: ADMIN_EMAIL,
+        subject: subject
+          ? `Contact Form: ${subject}`
+          : "New Contact Form Submission - The Dink House",
+        html: formatAdminEmail({
+          firstName,
+          lastName,
+          email,
+          message,
+          phone,
+          company,
+          subject,
+          logoUrl,
+        }),
+        replyTo: email,
       });
 
-      // Send user confirmation email
-      confirmationSent = await sendToMailPit({
-        from: FROM_EMAIL,
+      // Send user confirmation email with branded template
+      const userHtml = formatUserEmail(firstName)
+        .replace(/{{logo_url}}/g, logoUrl)
+        .replace(/{{site_url}}/g, SITE_URL);
+
+      confirmationSent = await sendEmail({
         to: email,
-        subject: 'Thank you for contacting The Dink House',
-        html: formatUserEmail(firstName)
+        subject: "Thank you for contacting The Dink House",
+        html: userHtml,
       });
 
-      console.log('Email status:', { emailSent, confirmationSent });
+      console.log("Email status:", { emailSent, confirmationSent });
     } catch (emailError) {
-      console.error('Error sending emails:', emailError);
+      console.error("Error sending emails:", emailError);
       // Continue even if email fails
     }
 
     // If API key is configured, also save to Supabase
     if (SUPABASE_ANON_KEY) {
       try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/submit_contact_form`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        const response = await fetch(
+          `${SUPABASE_URL}/rest/v1/rpc/submit_contact_form`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify(payload),
           },
-          body: JSON.stringify(payload)
-        });
+        );
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('Supabase error:', errorText);
+
+          console.error("Supabase error:", errorText);
         }
       } catch (dbError) {
-        console.error('Database error:', dbError);
+        console.error("Database error:", dbError);
         // Continue even if database fails
       }
     }
 
     // Log submission for development
-    console.log('Contact Form Submission:', {
+    console.log("Contact Form Submission:", {
       timestamp: new Date().toISOString(),
       data: { firstName, lastName, email, message, phone, company, subject },
       emailSent,
-      confirmationSent
+      confirmationSent,
     });
 
     // Return success response
     return res.status(200).json({
       success: true,
-      message: 'Thank you for your message! We will get back to you soon.',
+      message: "Thank you for your message! We will get back to you soon.",
       inquiry_id: `form-${Date.now()}`,
       emailSent,
-      confirmationSent
+      confirmationSent,
     });
-
   } catch (error) {
-    console.error('Contact form submission error:', error);
+    console.error("Contact form submission error:", error);
+
     return res.status(500).json({
       success: false,
-      message: 'An error occurred while submitting your message. Please try again.'
+      message:
+        "An error occurred while submitting your message. Please try again.",
     });
   }
 }

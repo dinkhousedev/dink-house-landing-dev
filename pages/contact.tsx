@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import { Button } from "@heroui/button";
+
 import DefaultLayout from "@/layouts/default";
 import ContactFormModal from "@/components/contact-form";
-import { Button } from "@heroui/button";
 import { title, subtitle } from "@/components/primitives";
 
 export default function ContactPage() {
@@ -19,7 +20,8 @@ export default function ContactPage() {
           <h1 className={title()}>Contact&nbsp;</h1>
           <h1 className={title({ color: "green" })}>The Dink House</h1>
           <h2 className={subtitle({ class: "mt-4" })}>
-            We&apos;re here to answer your questions and can&apos;t wait to hear from you!
+            We&apos;re here to answer your questions and can&apos;t wait to hear
+            from you!
           </h2>
         </div>
 
@@ -35,8 +37,9 @@ export default function ContactPage() {
 
         <div className="mt-8 max-w-2xl text-center">
           <p className="text-gray-600">
-            Whether you have questions about our facilities, want to learn more about pickleball,
-            or are interested in membership options, we&apos;re here to help!
+            Whether you have questions about our facilities, want to learn more
+            about pickleball, or are interested in membership options,
+            we&apos;re here to help!
           </p>
         </div>
 
