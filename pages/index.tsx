@@ -39,9 +39,14 @@ const STAGGER_DELAYS = {
 
 // Feature data for better maintainability
 const FACILITY_FEATURES = [
-  { icon: "solar:star-bold", text: "10 Total Courts" },
-  { icon: "solar:star-bold", text: "5 Indoor Courts" },
-  { icon: "solar:star-bold", text: "5 Outdoor Courts" },
+  { icon: "solar:home-smile-angle-bold", text: "5 Indoor Courts" },
+  { icon: "solar:sun-2-bold", text: "5 Outdoor Courts" },
+  { icon: "solar:lightbulb-bolt-bold", text: "LED Lighting" },
+  { icon: "solar:waterdrops-bold", text: "Water Stations" },
+  { icon: "solar:shop-2-bold", text: "Pro Shop" },
+  { icon: "solar:cup-hot-bold", text: "Lounge Area" },
+  { icon: "solar:shield-check-bold", text: "Certified Coaches" },
+  { icon: "solar:medal-ribbon-star-bold", text: "Tournament Ready" },
 ] as const;
 
 export default function IndexPage() {
@@ -140,7 +145,8 @@ export default function IndexPage() {
                     featuring 10 championship courts in the heart of Central
                     Texas. Experience year-round play with 5 climate-controlled
                     indoor courts and 5 outdoor courts. Proudly serving Belton,
-                    Killeen, Copperas Cove, Fort Hood, Temple, and Salado.
+                    Killeen, Copperas Cove, Fort Hood, Temple, and the surrounding
+                    communities.
                   </m.div>
 
                   {/* Call-to-Action Buttons */}

@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { Turnstile } from "@marsidev/react-turnstile";
 import {
   Modal,
   ModalContent,
@@ -54,10 +53,8 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "success" | "error"
   >("idle");
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasRestoredData, setHasRestoredData] = useState(false);
-  const turnstileRef = useRef<any>(null);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Format phone number as user types
@@ -177,11 +174,6 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
       }
     }
 
-    // Check Turnstile
-    if (!turnstileToken) {
-      newErrors.turnstile = "Please complete the security verification";
-    }
-
     setErrors(newErrors);
 
     return Object.keys(newErrors).length === 0;
@@ -203,10 +195,7 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...formData,
-          turnstileToken,
-        }),
+        body: JSON.stringify(formData),
       });
 
       const result = await response.json();
@@ -229,8 +218,6 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
             subject: "",
             _honeypot: "",
           });
-          setTurnstileToken(null);
-          turnstileRef.current?.reset();
         }, 3000);
       } else {
         setSubmitStatus("error");
@@ -291,24 +278,8 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
     }
     setErrors({});
     setSubmitStatus("idle");
-    setTurnstileToken(null);
-    turnstileRef.current?.reset();
     setHasRestoredData(false);
     onClose();
-  };
-
-  const handleTurnstileChange = (token: string) => {
-    setTurnstileToken(token);
-    // Clear Turnstile error when user completes it
-    if (token && errors.turnstile) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-
-        delete newErrors.turnstile;
-
-        return newErrors;
-      });
-    }
   };
 
   return (
@@ -658,44 +629,6 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
                     </motion.div>
                   )}
                 </AnimatePresence>
-
-                {/* Cloudflare Turnstile */}
-                <div className="flex flex-col items-center gap-2">
-                  {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? (
-                    <Turnstile
-                      ref={turnstileRef}
-                      siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                      options={{
-                        theme: "light",
-                        size: "normal",
-                      }}
-                      onError={() => {
-                        console.error("Turnstile error occurred");
-                        setErrors((prev) => ({
-                          ...prev,
-                          turnstile: "Security verification failed to load. Please refresh the page.",
-                        }));
-                      }}
-                      onExpire={() => {
-                        setTurnstileToken(null);
-                        setErrors((prev) => ({
-                          ...prev,
-                          turnstile: "Security verification expired. Please complete it again.",
-                        }));
-                      }}
-                      onSuccess={handleTurnstileChange}
-                    />
-                  ) : (
-                    <div className="p-3 bg-yellow-100 text-yellow-700 rounded-lg text-sm">
-                      ⚠️ Security verification is not configured. Please contact support.
-                    </div>
-                  )}
-                  {errors.turnstile && (
-                    <div className="text-sm text-red-600" role="alert">
-                      {errors.turnstile}
-                    </div>
-                  )}
-                </div>
               </ModalBody>
               <ModalFooter>
                 <Button

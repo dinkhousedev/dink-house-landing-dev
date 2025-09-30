@@ -14,7 +14,6 @@ const FROM_EMAIL = process.env.EMAIL_FROM || "hello@dinkhousepb.com";
 const FROM_NAME = process.env.EMAIL_FROM_NAME || "The Dink House";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@dinkhousepb.com";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://dinkhousepb.com";
-const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || "";
 
 // Rate limiting configuration
 const RATE_LIMIT_PER_MINUTE = parseInt(
@@ -266,55 +265,6 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-// Verify Cloudflare Turnstile token
-async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
-  try {
-    if (!TURNSTILE_SECRET_KEY) {
-      console.warn(
-        "Turnstile secret key not configured, skipping verification",
-      );
-
-      return true; // Skip verification in development if not configured
-    }
-
-    const response = await fetch(
-      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          secret: TURNSTILE_SECRET_KEY,
-          response: token,
-          remoteip: ip,
-        }),
-      },
-    );
-
-    const data = await response.json();
-
-    if (!data.success) {
-      const errorCodes = data["error-codes"] || [];
-      console.error("Turnstile verification failed:", errorCodes);
-
-      // Check for specific error types
-      if (errorCodes.includes("invalid-input-secret") || errorCodes.includes("missing-input-secret")) {
-        console.error("ERROR: TURNSTILE_SECRET_KEY is invalid or missing in environment variables");
-      } else if (errorCodes.includes("invalid-input-response")) {
-        console.error("ERROR: Turnstile token is invalid or expired");
-      }
-
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error("Turnstile verification error:", error);
-
-    return false;
-  }
-}
 
 export default async function handler(
   req: NextApiRequest,
@@ -345,7 +295,6 @@ export default async function handler(
       phone,
       company,
       subject,
-      turnstileToken,
     } = req.body;
 
     // Validate required fields
@@ -363,24 +312,6 @@ export default async function handler(
       return res.status(400).json({
         success: false,
         message: "Invalid email address",
-      });
-    }
-
-    // Verify Turnstile
-    if (TURNSTILE_SECRET_KEY && turnstileToken) {
-      const isValidTurnstile = await verifyTurnstile(turnstileToken, clientIp);
-
-      if (!isValidTurnstile) {
-        console.error("Turnstile verification failed for submission");
-        return res.status(400).json({
-          success: false,
-          message: "Security verification failed. Please try again. If the issue persists, contact support.",
-        });
-      }
-    } else if (TURNSTILE_SECRET_KEY && !turnstileToken) {
-      return res.status(400).json({
-        success: false,
-        message: "Please complete the security verification",
       });
     }
 
