@@ -76,14 +76,9 @@ export const siteConfig = {
     },
   ],
   links: {
-    facebook: "https://facebook.com/thedinkhouse",
-    instagram: "https://instagram.com/thedinkhouse",
-    tiktok: "https://tiktok.com/@thedinkhouse",
+    facebook: "https://www.facebook.com/profile.php?id=61581427090217&rdid=gITEzuevUrI2I1xT&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1EAaDCQeoU%2F#",
+    instagram: "https://www.instagram.com/the.dink.house?igsh=MTNuamlseXZkaWFjZg%3D%3D&utm_source=qr",
+    tiktok:  "https://www.tiktok.com/@thedinkhousetx?lang=en",
     youtube: "https://youtube.com/@thedinkhouse",
-    twitter: "https://twitter.com/thedinkhouse",
-    github: "https://github.com/thedinkhouse",
-    discord: "https://discord.gg/thedinkhouse",
-    docs: "https://thedinkhouse.com",
-    sponsor: "https://thedinkhouse.com/membership",
   },
 };

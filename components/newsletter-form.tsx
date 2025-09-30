@@ -43,15 +43,17 @@ export default function NewsletterForm() {
 
   return (
     <div className="newsletter-form">
-      <h3 className="text-2xl font-bold mb-4">Join Our Newsletter</h3>
-      <p className="mb-4 text-gray-600">
-        Get the latest updates and exclusive content delivered to your inbox.
+      <h3 className="text-2xl font-bold mb-4 uppercase tracking-wider">
+        Join Our Newsletter
+      </h3>
+      <p className="mb-6 text-gray-600">
+        Get exclusive access to court bookings, events, pro tips, and special offers.
       </p>
 
-      <form className="flex gap-2" onSubmit={handleSubmit}>
+      <form className="flex flex-col sm:flex-row gap-3" onSubmit={handleSubmit}>
         <input
           required
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 px-4 py-3 border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#B3FF00] focus:border-[#B3FF00] transition-all"
           disabled={loading}
           placeholder="Enter your email"
           type="email"
@@ -59,7 +61,7 @@ export default function NewsletterForm() {
           onChange={(e) => setEmail(e.target.value)}
         />
         <button
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-8 py-3 bg-[#B3FF00] text-black font-bold uppercase tracking-wider hover:bg-[#9FE600] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md hover:shadow-lg"
           disabled={loading}
           type="submit"
         >
@@ -69,13 +71,13 @@ export default function NewsletterForm() {
 
       {message && (
         <div
-          className={`mt-4 p-3 rounded-lg ${
+          className={`mt-4 p-4 border-l-4 ${
             message.type === "success"
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
+              ? "bg-green-50 border-[#B3FF00] text-green-800"
+              : "bg-red-50 border-red-500 text-red-800"
           }`}
         >
-          {message.text}
+          <p className="font-semibold">{message.text}</p>
         </div>
       )}
     </div>
