@@ -15,11 +15,62 @@ const SpotlightImage: React.FC<SpotlightImageProps> = ({
 }) => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isAutoAnimating, setIsAutoAnimating] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const animationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Mobile flashlight animation
+  useEffect(() => {
+    if (!isMobile || !containerRef.current) return;
+
+    const animateFlashlight = () => {
+      if (!containerRef.current) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const randomX = Math.random() * rect.width;
+      const randomY = Math.random() * rect.height;
+
+      setMousePosition({ x: randomX, y: randomY });
+    };
+
+    // Start animation after a short delay
+    const startDelay = setTimeout(() => {
+      setIsAutoAnimating(true);
+      animateFlashlight(); // First position
+
+      // Continue animating every 2.5 seconds
+      animationIntervalRef.current = setInterval(animateFlashlight, 2500);
+    }, 500);
+
+    return () => {
+      clearTimeout(startDelay);
+      if (animationIntervalRef.current) {
+        clearInterval(animationIntervalRef.current);
+      }
+    };
+  }, [isMobile]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!containerRef.current) return;
+
+      setIsAutoAnimating(false);
+      if (animationIntervalRef.current) {
+        clearInterval(animationIntervalRef.current);
+      }
 
       const rect = containerRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -30,6 +81,11 @@ const SpotlightImage: React.FC<SpotlightImageProps> = ({
 
     const handleTouchMove = (e: TouchEvent) => {
       if (!containerRef.current) return;
+
+      setIsAutoAnimating(false);
+      if (animationIntervalRef.current) {
+        clearInterval(animationIntervalRef.current);
+      }
 
       const rect = containerRef.current.getBoundingClientRect();
       const touch = e.touches[0];
@@ -77,7 +133,7 @@ const SpotlightImage: React.FC<SpotlightImageProps> = ({
         <div className="absolute inset-0 bg-black/80 spotlight-overlay" />
 
         <div
-          className="spotlight-effect"
+          className={`spotlight-effect ${isMobile && isAutoAnimating ? "flashlight-mode" : ""}`}
           style={
             {
               "--mouse-x": `${mousePosition.x}px`,

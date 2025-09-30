@@ -119,14 +119,28 @@
     position: absolute;
     inset: 0;
     background: radial-gradient(
-      circle 250px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      circle 400px at var(--mouse-x, 50%) var(--mouse-y, 50%),
       transparent 0%,
-      rgba(0, 0, 0, 0.4) 40%,
-      rgba(0, 0, 0, 0.8) 100%
+      rgba(179, 255, 0, 0.15) 20%,
+      rgba(0, 0, 0, 0.3) 50%,
+      rgba(0, 0, 0, 0.75) 100%
     );
     mix-blend-mode: multiply;
     pointer-events: none;
     will-change: background;
+    transition: background 0.15s ease-out;
+  }
+
+  /* Mobile Flashlight Effect */
+  .flashlight-mode {
+    background: radial-gradient(
+      circle 350px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      transparent 0%,
+      rgba(179, 255, 0, 0.2) 15%,
+      rgba(0, 0, 0, 0.2) 45%,
+      rgba(0, 0, 0, 0.7) 100%
+    );
+    transition: background 1.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Spotlight Overlay - Darkens the entire image */
