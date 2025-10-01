@@ -6,7 +6,7 @@ import { Image } from "@heroui/react";
 import { Button } from "@heroui/react";
 
 interface ImageCarouselProps {
-  images: Array<{ src: string; alt: string }>;
+  images: Array<{ src: string; srcSet?: string; alt: string }>;
   autoplayInterval?: number;
   showControls?: boolean;
   showIndicators?: boolean;
@@ -81,7 +81,7 @@ export const ImageCarousel = ({
       onMouseLeave={() => setIsPaused(false)}
     >
       <LazyMotion features={domAnimation}>
-        <div className="relative aspect-video w-full">
+        <div className="relative w-full h-full">
           <AnimatePresence initial={false} custom={direction}>
             <m.div
               key={page}
@@ -97,7 +97,7 @@ export const ImageCarousel = ({
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={1}
-              onDragEnd={(e, { offset, velocity }) => {
+              onDragEnd={(_, { offset, velocity }) => {
                 const swipe = swipePower(offset.x, velocity.x);
 
                 if (swipe < -swipeConfidenceThreshold) {
@@ -106,14 +106,14 @@ export const ImageCarousel = ({
                   paginate(-1);
                 }
               }}
-              className="absolute inset-0"
+              className="absolute inset-0 flex items-center justify-center"
             >
               <Image
                 src={images[imageIndex].src}
+                srcSet={images[imageIndex].srcSet}
+                sizes="(max-width: 640px) 640px, (max-width: 1024px) 800px, 1200px"
                 alt={images[imageIndex].alt}
-                className="h-full w-full object-cover"
-                width={1200}
-                height={675}
+                className="h-full w-full object-cover object-center"
                 loading="lazy"
               />
             </m.div>
