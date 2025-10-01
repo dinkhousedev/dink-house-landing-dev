@@ -8,6 +8,11 @@ const nextConfig = {
         hostname: 'nextuipro.nyc3.cdn.digitaloceanspaces.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'wchxzbuuwssrnaxshseu.supabase.co',
+        pathname: '/**',
+      },
     ],
   },
 }

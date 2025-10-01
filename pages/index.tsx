@@ -4,10 +4,11 @@ import { Icon } from "@iconify/react";
 import { AnimatePresence, LazyMotion, domAnimation, m } from "framer-motion";
 
 import DefaultLayout from "@/layouts/default";
-import SpotlightImage from "@/components/hero/spotlight-image";
 import FAQsSection from "@/components/faqs";
 import WaitlistModal from "@/components/WaitlistModal";
 import RoadmapStepper from "@/components/roadmap-stepper";
+import SupabaseImageCarousel from "@/components/supabase-image-carousel";
+import VideoBanner from "@/components/video-banner";
 
 // Animation variants for cleaner code organization
 const fadeInVariants = {
@@ -57,18 +58,12 @@ export default function IndexPage() {
 
   return (
     <DefaultLayout>
-      <div className="relative flex min-h-screen w-full flex-col bg-background">
-        {/* Background Image - Positioned to fill entire banner */}
-        <div className="absolute inset-0 z-0">
-          <SpotlightImage
-            priority
-            alt="The Dink House Pickleball Facility Aerial View"
-            src="/images/facility-aerial.png"
-          />
-        </div>
+      {/* Video Banner */}
+      <VideoBanner />
 
-        {/* Content Container with relative positioning to appear above background */}
-        <main className="relative z-10 mx-auto mt-16 sm:mt-20 lg:mt-24 flex w-full max-w-7xl flex-col items-start px-4 sm:px-6 lg:px-8 xl:px-12">
+      <div className="flex min-h-screen w-full flex-col bg-background">
+        {/* Hero Banner */}
+        <main className="mx-auto mt-16 sm:mt-20 lg:mt-24 flex w-full max-w-7xl flex-col items-start px-4 sm:px-6 lg:px-8 xl:px-12">
           <section className="flex flex-col items-start justify-center gap-4 sm:gap-6 w-full lg:max-w-4xl xl:max-w-5xl">
             {/* Coming Soon Badge */}
             <Button
@@ -207,6 +202,18 @@ export default function IndexPage() {
           </section>
         </main>
       </div>
+
+      {/* Image Carousel Section */}
+      <section className="mx-auto w-full max-w-7xl px-4 py-12 sm:py-16 sm:px-6 lg:px-8">
+        <div className="w-full">
+          <SupabaseImageCarousel
+            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-xl overflow-hidden"
+            showControls={true}
+            showIndicators={true}
+            autoplayInterval={5000}
+          />
+        </div>
+      </section>
 
       {/* Roadmap Section */}
       <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
