@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 
@@ -12,7 +10,13 @@ const LOGO_URL = "https://wchxzbuuwssrnaxshseu.supabase.co/storage/v1/object/pub
 
 export default function VideoBanner() {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [isClient, setIsClient] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Ensure component only renders on client
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -23,23 +27,38 @@ export default function VideoBanner() {
       setCurrentVideoIndex((prevIndex) => (prevIndex + 1) % VIDEO_URLS.length);
     };
 
+    const handleCanPlay = () => {
+      video.play().catch((error) => {
+        console.warn("Video autoplay failed:", error);
+      });
+    };
+
     video.addEventListener("ended", handleVideoEnded);
+    video.addEventListener("canplay", handleCanPlay);
 
     return () => {
       video.removeEventListener("ended", handleVideoEnded);
+      video.removeEventListener("canplay", handleCanPlay);
     };
   }, []);
 
   // Reset and play video when index changes
   useEffect(() => {
     const video = videoRef.current;
-    if (video) {
+    if (video && isClient) {
       video.load();
-      video.play().catch((error) => {
-        console.warn("Video autoplay failed:", error);
-      });
+      // Attempt to play after a short delay to ensure load completes
+      setTimeout(() => {
+        video.play().catch((error) => {
+          console.warn("Video autoplay failed:", error);
+        });
+      }, 100);
     }
-  }, [currentVideoIndex]);
+  }, [currentVideoIndex, isClient]);
+
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <div className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[70vh] overflow-hidden">
@@ -50,7 +69,9 @@ export default function VideoBanner() {
         autoPlay
         muted
         playsInline
+        loop={VIDEO_URLS.length === 1}
         preload="auto"
+        controls={false}
       >
         <source src={VIDEO_URLS[currentVideoIndex]} type="video/mp4" />
         Your browser does not support the video tag.
