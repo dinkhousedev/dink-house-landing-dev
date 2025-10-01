@@ -11,11 +11,21 @@ const LOGO_URL = "https://wchxzbuuwssrnaxshseu.supabase.co/storage/v1/object/pub
 export default function VideoBanner() {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [isClient, setIsClient] = useState(false);
+  const [logoFaded, setLogoFaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Ensure component only renders on client
   useEffect(() => {
     setIsClient(true);
+  }, []);
+
+  // Trigger logo fade-out after a short delay on mount
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => {
+      setLogoFaded(true);
+    }, 2000); // Wait 2 seconds before starting fade
+
+    return () => clearTimeout(fadeTimer);
   }, []);
 
   useEffect(() => {
@@ -80,8 +90,12 @@ export default function VideoBanner() {
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-black/50" />
 
-      {/* Centered Logo */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      {/* Centered Logo with Fade-Out */}
+      <div
+        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-[3000ms] ease-out ${
+          logoFaded ? 'opacity-0' : 'opacity-100'
+        }`}
+      >
         <div className="relative w-[200px] h-[200px] sm:w-[200px] sm:h-[200px] lg:w-[200px] lg:h-[200px] rounded-2xl overflow-hidden">
           <Image
             src={LOGO_URL}
