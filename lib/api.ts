@@ -9,6 +9,7 @@ export interface ApiResponse {
   message: string;
   inquiry_id?: string;
   already_subscribed?: boolean;
+  subscriber_id?: string;
 }
 
 export interface NewsletterSignupData {

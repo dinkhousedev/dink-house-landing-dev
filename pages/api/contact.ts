@@ -91,12 +91,19 @@ export default async function handler(
 
     const result = await response.json();
 
+    // Log the actual response for debugging
+    console.log("API Response:", JSON.stringify(result, null, 2));
+
     if (!response.ok) {
+      console.error("API returned non-OK status:", response.status, result);
       throw new Error(result.message || "Failed to submit");
     }
 
-    if (result.success) {
-      if (result.already_subscribed) {
+    // Check if result is the direct response or wrapped
+    const actualResult = result.success !== undefined ? result : result;
+
+    if (actualResult.success) {
+      if (actualResult.already_subscribed) {
         return res.status(200).json({
           success: true,
           message:
@@ -105,7 +112,17 @@ export default async function handler(
         });
       }
 
-      console.log("Contact notification signup saved:", result.inquiry_id);
+      console.log("Contact notification signup saved:", actualResult.subscriber_id);
+
+      // New signups now require email confirmation
+      if (actualResult.requires_confirmation) {
+        return res.status(200).json({
+          success: true,
+          message:
+            "Almost there! Check your email to confirm your subscription and join the waitlist.",
+          data: contactData,
+        });
+      }
 
       return res.status(200).json({
         success: true,
@@ -114,15 +131,19 @@ export default async function handler(
         data: contactData,
       });
     } else {
-      throw new Error(result.message || "Submission failed");
+      console.error("API returned success: false", actualResult);
+      throw new Error(actualResult.message || "Submission failed");
     }
   } catch (error) {
     console.error("Error processing contact submission:", error);
 
+    // Provide more helpful error message
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: "Failed to process contact submission",
+      error: `Failed to process contact submission: ${errorMessage}`,
     });
   }
 }

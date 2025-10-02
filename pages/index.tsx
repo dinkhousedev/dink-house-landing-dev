@@ -220,6 +220,27 @@ export default function IndexPage() {
         <RoadmapStepper />
       </section>
 
+      {/* Post-Roadmap CTA */}
+      <section className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="bg-gradient-to-r from-black via-gray-900 to-black border-2 border-dink-lime rounded-2xl p-8 sm:p-12 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+            <span className="text-white">Want Updates on Our </span>
+            <span className="text-dink-lime">Progress?</span>
+          </h2>
+          <p className="text-gray-300 text-lg mb-6 max-w-2xl mx-auto">
+            Get notified of construction milestones, opening dates, and exclusive pre-launch membership offers
+          </p>
+          <Button
+            className="h-12 bg-dink-lime px-8 text-base font-bold uppercase text-black transition-colors hover:bg-dink-lime-dark"
+            radius="full"
+            size="lg"
+            onPress={handleOpenModal}
+          >
+            Join Our Notification List
+          </Button>
+        </div>
+      </section>
+
       {/* FAQs Section */}
       <FAQsSection />
 

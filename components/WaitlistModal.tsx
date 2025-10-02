@@ -20,6 +20,7 @@ const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose }) => {
     lastName: "",
     email: "",
   });
+  const [acceptNotifications, setAcceptNotifications] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<
@@ -45,6 +46,10 @@ const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose }) => {
       if (!emailRegex.test(formData.email)) {
         newErrors.email = "Please enter a valid email address";
       }
+    }
+
+    if (!acceptNotifications) {
+      newErrors.consent = "Please confirm that you want to receive notifications";
     }
 
     setErrors(newErrors);
@@ -80,11 +85,13 @@ const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose }) => {
         } else {
           setSubmitStatus("success");
           setFormData({ firstName: "", lastName: "", email: "" });
+          setAcceptNotifications(false);
         }
         setTimeout(() => {
           onClose();
           setSubmitStatus("idle");
           setFormData({ firstName: "", lastName: "", email: "" });
+          setAcceptNotifications(false);
         }, 3000);
       } else {
         setSubmitStatus("error");
@@ -195,6 +202,33 @@ const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose }) => {
                       value={formData.email}
                       onChange={handleInputChange}
                     />
+
+                    {/* Notification Consent Checkbox */}
+                    <div className="flex items-start gap-3 pt-2">
+                      <input
+                        required
+                        checked={acceptNotifications}
+                        className="mt-1 w-5 h-5 border-2 border-gray-300 rounded focus:ring-2 focus:ring-[#B3FF00] accent-[#B3FF00] cursor-pointer"
+                        disabled={isSubmitting}
+                        id="accept-notifications-modal"
+                        type="checkbox"
+                        onChange={(e) => setAcceptNotifications(e.target.checked)}
+                      />
+                      <label
+                        className="text-sm text-gray-700 cursor-pointer select-none"
+                        htmlFor="accept-notifications-modal"
+                      >
+                        I agree to receive email notifications about court bookings,
+                        events, tips, and special offers from The Dink House.{" "}
+                        <span className="text-red-500">*</span>
+                      </label>
+                    </div>
+
+                    {errors.consent && (
+                      <div className="text-sm text-red-600 mt-1">
+                        {errors.consent}
+                      </div>
+                    )}
                   </div>
                 )}
               </ModalBody>
@@ -210,7 +244,9 @@ const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose }) => {
                 <Button
                   className="bg-dink-lime text-black font-bold"
                   isDisabled={
-                    submitStatus === "success" || submitStatus === "duplicate"
+                    submitStatus === "success" ||
+                    submitStatus === "duplicate" ||
+                    !acceptNotifications
                   }
                   isLoading={isSubmitting}
                   type="submit"
