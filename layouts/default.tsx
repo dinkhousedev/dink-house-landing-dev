@@ -7,6 +7,7 @@ import { Input } from "@heroui/input";
 import { Head } from "./head";
 
 import { Navbar } from "@/components/navbar";
+import ResubscribeModal from "@/components/ResubscribeModal";
 
 export default function DefaultLayout({
   children,
@@ -19,6 +20,7 @@ export default function DefaultLayout({
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const [isResubscribeModalOpen, setIsResubscribeModalOpen] = useState(false);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +92,23 @@ export default function DefaultLayout({
               <p className="text-sm text-gray-300">contact@dinkhousepb.com</p>
             </div>
           </div>
+          {/* Resubscribe Section */}
+          <div className="border-t border-gray-800 mt-6 pt-6">
+            <div className="text-center">
+              <p className="text-gray-400 text-sm mb-2">
+                Changed your mind?
+              </p>
+              <Button
+                className="bg-dink-lime text-black font-bold"
+                size="sm"
+                onPress={() => setIsResubscribeModalOpen(true)}
+              >
+                Resubscribe to Newsletter
+              </Button>
+            </div>
+          </div>
+
+          {/* Copyright Section */}
           <div className="border-t border-gray-800 mt-6 pt-4">
             <div className="flex flex-col md:flex-row items-center justify-between">
               <p className="text-gray-400 text-sm">
@@ -104,6 +123,10 @@ export default function DefaultLayout({
           </div>
         </div>
       </footer>
+      <ResubscribeModal
+        isOpen={isResubscribeModalOpen}
+        onClose={() => setIsResubscribeModalOpen(false)}
+      />
     </div>
   );
 }
